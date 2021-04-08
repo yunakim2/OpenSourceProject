@@ -51,8 +51,9 @@ def koberPreProcessing(test, train):
         attention_mask.append(seq_mask)
 
     '''trian - validation set 분리'''
+    # TODO 라벨링 작업 필요
     train_inputs, validation_inputs, train_labels, validation_labels = \
-        train_test_split(input_ids, train['text'].values, random_state=42, test_size=0.1)
+        train_test_split(input_ids, train['label'].values, random_state=42, test_size=0.1)
 
     train_masks, validation_masks, _, _ = train_test_split(attention_mask,
                                                            input_ids,
