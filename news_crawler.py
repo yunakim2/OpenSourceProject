@@ -51,7 +51,9 @@ def crawling_main_text(url):
             text = soup.find('div', {'class' : 'art_txt'}).text
         except:
             return None,None
-    return text.replace('\n','').replace('\r','').replace('<br>','').replace('\t',''),soup.find('li',{'class':'lasttime'}).text
+    text=text.replace('\n','').replace('\r','').replace('<br>','').replace('\t','')
+		time_text=soup.find('li',{'class':'lasttime'}).text.replace('\n','').replace('\r','').replace('<br>','').replace('\t','')
+		return text,time_text
 
 # In[ ]:
 
