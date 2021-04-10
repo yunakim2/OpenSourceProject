@@ -50,9 +50,8 @@ def crawling_main_text(url):
         try:
             text = soup.find('div', {'class' : 'art_txt'}).text
         except:
-            return None
-    return text.replace('\n','').replace('\r','').replace('<br>','').replace('\t','')
-
+            return None,None
+    return text.replace('\n','').replace('\r','').replace('<br>','').replace('\t',''),soup.find('li',{'class':'lasttime'}).text
 
 # In[ ]:
 
@@ -115,9 +114,9 @@ for date in date_range(date_start,date_end):
 
             for n in a_list[:min(len(a_list), news_num_per_day-idx)]:
                 n_url = n.get_attribute('href')
-                text = crawling_main_text(n_url)
+                text,text_time = crawling_main_text(n_url)
                 if text:
-                    news_list.append({'title':n.get_attribute('title'),'url':n_url,'text':text,'date':date.strftime('%Y.%m.%d')})
+                    news_list.append({'title':n.get_attribute('title'),'url':n_url,'text':text,'date':date.strftime('%Y.%m.%d'),'time':text_time})
                     idx += 1
                     pbar.update(1)
             
