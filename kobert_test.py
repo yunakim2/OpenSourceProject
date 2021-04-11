@@ -51,7 +51,6 @@ def koberPreProcessing(test, train):
         attention_mask.append(seq_mask)
 
     '''trian - validation set 분리'''
-    # TODO 라벨링 작업 필요
     train_inputs, validation_inputs, train_labels, validation_labels = \
         train_test_split(input_ids, train['label'].values, random_state=42, test_size=0.1)
 
@@ -113,8 +112,14 @@ def newsDataProcessing():
     data = pd.read_csv("data/카카오_2020.01.01_2020.12.31_3.csv", encoding='utf-8')
     test_cnt = int(data.shape[0] * 0.25)
     train_cnt = data.shape[0] - test_cnt
-    print(test_cnt)
-    print(train_cnt)
+    # print(test_cnt)
+    # print(train_cnt)
+
+    '''news_data label 열 추가'''
+    data['label'] = 0
+    data = newsStockProcessing(data)
+    for i in range(5):
+        print(data.iloc[i]['date'], data.iloc[i]['label'])
 
     test = data[:test_cnt]
     train = data[test_cnt:]
@@ -122,9 +127,38 @@ def newsDataProcessing():
     return test, train
 
 
+def newsStockProcessing(data):
+    """뉴스 데이터와 주식 변동량을 labeling 하는 작업"""
+    stock = pd.read_csv("data/stock/kakao2020.csv")
+    stock = stock[::-1]
+    i = 0
+    for idx in range(len(stock)):
+        print(idx, stock.iloc[idx]['날짜'], stock.iloc[idx]['변동 %'])
+        while True:
+            tmp_stock_date = stock.iloc[idx]['날짜']
+            tmp_stock_date = tmp_stock_date.replace('년','').replace('월','').replace('일','')
+            tmp_stock_date = tmp_stock_date.split(" ")
+            stock_date = datetime.date(int(tmp_stock_date[0]), int(tmp_stock_date[1]), int(tmp_stock_date[2]))
+            tmp_news_date = data.iloc[i]['date']
+            tmp_news_date = tmp_news_date.split(".")
+            news_date = datetime.date(int(tmp_news_date[0]),int(tmp_news_date[1]),int(tmp_news_date[2]))
+            date_diff = stock_date - news_date
+            print(date_diff.days ,news_date, data.iloc[i]['title'])
+            if date_diff.days <= 0:
+                break
+
+            if date_diff.days == 1:
+                data.loc[i, 'label'] = float(stock.iloc[idx]['변동 %'].replace('%',''))
+
+            i += 1
+    file_name = "data/kakao2020_news_stock"
+    data.to_csv(file_name)
+    return data
+
+
 def koBERTClassification(train_dataloader):
     """분류를 위한 BERT 모델 생성"""
-    model = BertForSequenceClassification.from_pretrained("bert-base-multilingual-cased", num_labels=2)
+    model = BertForSequenceClassification.from_pretrained("bert-base-multilingual-cased", num_labels=1)
     model.cuda()
 
     """학습 스케줄링"""
@@ -222,7 +256,7 @@ def learningBERT(model, epochs, train_dataloader, test_dataloader, validation_da
             # 그래디언트 초기화
             model.zero_grad()
 
-                # 평균 로스 계산
+            # 평균 로스 계산
             avg_train_loss = total_loss / len(train_dataloader)
 
             print("")
