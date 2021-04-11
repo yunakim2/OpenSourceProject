@@ -1,3 +1,4 @@
+# In[]
 # -*- coding: utf-8 -*-
 """koBERT_Practice.ipynb
 
@@ -97,7 +98,7 @@ validation_masks = torch.tensor(validation_masks)
 
 '''배치 및 데이터로더 설정'''
 print('배치 및 데이터 로더 설정 중 - ')
-BATCH_SIZE = 32
+BATCH_SIZE = 1#32
 train_data = TensorDataset(train_inputs, train_masks, train_labels)
 train_sampler = RandomSampler(train_data)
 train_dataloader = DataLoader(train_data, sampler=train_sampler, batch_size=BATCH_SIZE)
@@ -134,7 +135,7 @@ print(n_devices)
 for i in range(n_devices):
     print(torch.cuda.get_device_name(i))
 
-if torch.cuda.is_available():
+if False:#torch.cuda.is_available():
     device = torch.device("cuda")
     print('There are %d GPU(s) available.' % torch.cuda.device_count())
     print('We will use the GPU:', torch.cuda.get_device_name(0))
@@ -146,7 +147,8 @@ else:
 
 print('분류를 위한 BERT 모델 생성 작업 중 - ')
 model = BertForSequenceClassification.from_pretrained("bert-base-multilingual-cased", num_labels=1)
-model.cuda()
+model.to(device)#cuda()
+model.double()
 
 """학습 스케줄링"""
 print('학습 스케줄링 중 - ')
@@ -169,7 +171,7 @@ def format_time(elapsed):
     return str(datetime.timedelta(seconds=elapsed_rounded))
 
 
-if torch.cuda.is_available():
+if False:#torch.cuda.is_available():
     device = torch.device("cuda")
     print('There are %d GPU(s) available.' % torch.cuda.device_count())
     print('We will use the GPU:', torch.cuda.get_device_name(0))
@@ -221,6 +223,7 @@ for epoch_i in range(0, epochs):
 
         # 배치를 GPU에 넣음
         batch = tuple(t.to(device) for t in batch)
+        #print(batch)
 
         # 배치에서 데이터 추출
         b_input_ids, b_input_mask, b_labels = batch
@@ -235,7 +238,7 @@ for epoch_i in range(0, epochs):
         total_loss += loss.item()
 
         # # Backward 수행으로 그래디언트 계산
-        # loss.backward()
+        loss.backward()
 
         # 그래디언트 클리핑
         torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
@@ -351,3 +354,5 @@ for step, batch in enumerate(test_dataloader):
 print("")
 print("Accuracy: {0:.2f}".format(eval_accuracy / nb_eval_steps))
 print("Test took: {:}".format(format_time(time.time() - t0)))
+
+# %%
