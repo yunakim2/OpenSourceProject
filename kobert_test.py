@@ -171,7 +171,7 @@ def newsStockProcessing():
 
     data_df = pd.DataFrame({'title': np_title, 'url':np_url, 'text':np_text, 'date': np_date, 'label': np_label})
 
-    file_name = "data/kakao2020_processing_data"
+    file_name = "data/kakao2020_processing_data.csv"
     data_df.to_csv(file_name)
 
 
@@ -339,19 +339,19 @@ def learningBERT(model, epochs, train_dataloader, test_dataloader, validation_da
 
 if __name__ == '__main__':
     '''뉴스 데이터 전처러'''
-    # newsStockProcessing()
-    test, train = newsDataProcessing()
-    test_dataloader, train_dataloader, validation_dataloader = koberPreProcessing(test, train)
-
-
-    epochs, scheduler, optimizer, model = koBERTClassification(train_dataloader)
-
-    if torch.cuda.is_available():
-        device = torch.device("cuda")
-        print('There are %d GPU(s) available.' % torch.cuda.device_count())
-        print('We will use the GPU:', torch.cuda.get_device_name(0))
-    else:
-        device = torch.device("cpu")
-        print('No GPU available, using the CPU instead.')
-
-    learningBERT(model, epochs, train_dataloader, test_dataloader, validation_dataloader, optimizer)
+    newsStockProcessing()
+    # test, train = newsDataProcessing()
+    # test_dataloader, train_dataloader, validation_dataloader = koberPreProcessing(test, train)
+    #
+    #
+    # epochs, scheduler, optimizer, model = koBERTClassification(train_dataloader)
+    #
+    # if torch.cuda.is_available():
+    #     device = torch.device("cuda")
+    #     print('There are %d GPU(s) available.' % torch.cuda.device_count())
+    #     print('We will use the GPU:', torch.cuda.get_device_name(0))
+    # else:
+    #     device = torch.device("cpu")
+    #     print('No GPU available, using the CPU instead.')
+    #
+    # learningBERT(model, epochs, train_dataloader, test_dataloader, validation_dataloader, optimizer)
