@@ -18,14 +18,15 @@ import os
 
 def makeDocumentBert(data):
     """[CLS] [SEP] 문장으로 변환 (뉴스 내용)"""
-    document_bert = []
-    for content in data['text']:
-        split_text = content.split('.')
+
+    for idx in range(len(data)):
+        document_bert = []
+        split_text = data.iloc[idx]['text'].split(' ')
         for s in split_text:
             document_bert.append("[CLS]" + str(s) + "[SEP]")
+        data.loc[idx, 'text'] = ''.join(document_bert)
 
-    print(document_bert[:5])
-    return document_bert
+    return data['text']
 
 
 def koberPreProcessing(test, train):
@@ -111,9 +112,6 @@ def newsDataProcessing():
     """뉴스 데이터 전처리 25% - test, 75% - train"""
     data = pd.read_csv("data/카카오_2020.01.01_2020.12.31_3.csv", encoding='utf-8')
     test_cnt = int(data.shape[0] * 0.25)
-    train_cnt = data.shape[0] - test_cnt
-    # print(test_cnt)
-    # print(train_cnt)
 
     '''news_data label 열 추가'''
     data['label'] = 0
