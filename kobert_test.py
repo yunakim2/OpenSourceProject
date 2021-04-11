@@ -24,6 +24,8 @@ def makeDocumentBert(data):
         split_text = data.iloc[idx]['text'].split(' ')
         for s in split_text:
             document_bert.append("[CLS]" + str(s) + "[SEP]")
+
+        print(document_bert)
         data.loc[idx, 'text'] = ''.join(document_bert)
 
     return data['text']
@@ -32,7 +34,7 @@ def makeDocumentBert(data):
 def koberPreProcessing(test, train):
     """kobert - test, train 데이터 전처리"""
 
-    train_document_bert = makeDocumentBert(train)
+    train_document_bert = train['text']
 
     '''사전 학습된 BERT multilingual 모델 내 포함되어있는 토크나이저를 활용하여 토크나이징 함'''
     tokenizer = BertTokenizer.from_pretrained('bert-base-multilingual-cased', do_lower_case=False)
@@ -79,7 +81,7 @@ def koberPreProcessing(test, train):
     validation_dataloader = DataLoader(validation_data, sampler=validation_sampler, batch_size=BATCH_SIZE)
 
     """테스트 셋 전처리"""
-    test_document_bert = makeDocumentBert(test)
+    test_document_bert = test['text']
     tokenized_texts = [tokenizer.tokenize(sent) for sent in test_document_bert]
 
     input_ids = [tokenizer.convert_tokens_to_ids(x) for x in tokenized_texts]
@@ -110,14 +112,8 @@ def koberPreProcessing(test, train):
 
 def newsDataProcessing():
     """뉴스 데이터 전처리 25% - test, 75% - train"""
-    data = pd.read_csv("data/카카오_2020.01.01_2020.12.31_3.csv", encoding='utf-8')
+    data = pd.read_csv("data/kakao2020_processing_data", encoding='utf-8')
     test_cnt = int(data.shape[0] * 0.25)
-
-    '''news_data label 열 추가'''
-    data['label'] = 0
-    data = newsStockProcessing(data)
-    for i in range(5):
-        print(data.iloc[i]['date'], data.iloc[i]['label'])
 
     test = data[:test_cnt]
     train = data[test_cnt:]
@@ -125,8 +121,12 @@ def newsDataProcessing():
     return test, train
 
 
-def newsStockProcessing(data):
+def newsStockProcessing():
     """뉴스 데이터와 주식 변동량을 labeling 하는 작업"""
+
+    data = pd.read_csv("data/카카오_2020.01.01_2020.12.31_3.csv", encoding='utf-8')
+    '''news_data label 열 추가'''
+    data['label'] = 0.0
     stock = pd.read_csv("data/stock/kakao2020.csv")
     stock = stock[::-1]
     i = 0
@@ -149,9 +149,27 @@ def newsStockProcessing(data):
                 data.loc[i, 'label'] = float(stock.iloc[idx]['변동 %'].replace('%',''))
 
             i += 1
-    file_name = "data/kakao2020_news_stock"
-    data.to_csv(file_name)
-    return data
+
+    np_title = []
+    np_url = []
+    np_text = []
+    np_date = []
+    np_label = []
+
+    for idx in range(len(data)):
+        split_text = data.iloc[idx]['text'].split('.')
+        for s in split_text:
+            np_text.append("[CLS]" + str(s) + "[SEP]")
+            np_title.append(data.iloc[idx]['title'])
+            np_url.append(data.iloc[idx]['url'])
+            np_date.append(data.iloc[idx]['date'])
+            np_label.append(data.iloc[idx]['label'])
+
+    data_df = pd.DataFrame({'title': np_title, 'url':np_url, 'text':np_text, 'date': np_date, 'label': np_label})
+
+    file_name = "data/kakao2020_processing_data"
+    data_df.to_csv(file_name)
+
 
 
 def koBERTClassification(train_dataloader):
@@ -313,6 +331,8 @@ def learningBERT(model, epochs, train_dataloader, test_dataloader, validation_da
 
 
 if __name__ == '__main__':
+    '''뉴스 데이터 전처러'''
+    # newsStockProcessing()
     test, train = newsDataProcessing()
     test_dataloader, train_dataloader, validation_dataloader = koberPreProcessing(test, train)
     epochs, scheduler, optimizer, model = koBERTClassification(train_dataloader)
