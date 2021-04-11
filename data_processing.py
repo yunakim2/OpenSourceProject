@@ -34,8 +34,8 @@ news=news.sort_values('time')
 
 labeled_data = pd.merge_asof(news,stock,left_on='time',right_on='날짜',direction='forward')
 
-labeled_data['text']=labeled_data['text'].str.split('.')
-labeled_data=labeled_data.explode('text')
+#labeled_data['text']=labeled_data['text'].str.split('.')
+#labeled_data=labeled_data.explode('text')
 
 labeled_data=labeled_data.drop(columns=['Unnamed: 0'])
 labeled_data=labeled_data.rename(columns={'변동 %':'label'})
