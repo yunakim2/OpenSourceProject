@@ -36,7 +36,8 @@ labeled_data = pd.merge_asof(news,stock,left_on='time',right_on='날짜',directi
 
 labeled_data['text']=labeled_data['text'].str.split('.')
 labeled_data=labeled_data.explode('text')
-labeled_data.dropna().to_csv('data/labeled/kakao2020.csv')
 
-# In[]
-%debug
+labeled_data=labeled_data.drop(columns=['Unnamed: 0'])
+labeled_data=labeled_data.rename(columns={'변동 %':'label'})
+
+labeled_data.dropna().to_csv('data/labeled/kakao2020.csv')
