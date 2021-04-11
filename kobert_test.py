@@ -35,25 +35,32 @@ def koberPreProcessing(test, train):
     """kobert - test, train 데이터 전처리"""
 
     train_document_bert = train['text']
+    print(train_document_bert[:5])
 
     '''사전 학습된 BERT multilingual 모델 내 포함되어있는 토크나이저를 활용하여 토크나이징 함'''
+    print("토그나이징 작업 중 - ")
     tokenizer = BertTokenizer.from_pretrained('bert-base-multilingual-cased', do_lower_case=False)
     tokenized_texts = [tokenizer.tokenize(s) for s in train_document_bert]
     print(tokenized_texts[0])
 
     '''패딩 과정'''
+    print('패딩 작업 중 - ')
     MAX_LEN = 128
     input_ids = [tokenizer.convert_tokens_to_ids(x) for x in tokenized_texts]
     input_ids = pad_sequences(input_ids, maxlen=MAX_LEN, dtype='long', truncating='post', padding='post')
+    print(input_ids[0])
 
     '''어텐션 마스크'''
     '''실 데이터가 있는 곳과 padding이 있는 곳 attention에게 알려줌'''
+    print('어텐션 마스크 작업 중 - ')
     attention_mask = []
     for seq in input_ids:
         seq_mask = [float(i > 0) for i in seq]
         attention_mask.append(seq_mask)
+    print(attention_mask[0])
 
     '''trian - validation set 분리'''
+    print('train - validation set 분리 작업 중 - ')
     train_inputs, validation_inputs, train_labels, validation_labels = \
         train_test_split(input_ids, train['label'].values, random_state=42, test_size=0.1)
 
@@ -63,6 +70,7 @@ def koberPreProcessing(test, train):
                                                            test_size=0.1)
 
     '''파이토치 텐서로 변환'''
+    print('파이토치 텐서로 변환 중 - ')
     train_inputs = torch.tensor(train_inputs)
     train_labels = torch.tensor(train_labels)
     train_masks = torch.tensor(train_masks)
@@ -71,6 +79,7 @@ def koberPreProcessing(test, train):
     validation_masks = torch.tensor(validation_masks)
 
     '''배치 및 데이터로더 설정'''
+    print('배치 및 데이터 로더 설정 중 - ')
     BATCH_SIZE = 32
     train_data = TensorDataset(train_inputs, train_masks, train_labels)
     train_sampler = RandomSampler(train_data)
@@ -81,7 +90,10 @@ def koberPreProcessing(test, train):
     validation_dataloader = DataLoader(validation_data, sampler=validation_sampler, batch_size=BATCH_SIZE)
 
     """테스트 셋 전처리"""
+    print('테스트 셋 전처리 중 - ')
     test_document_bert = test['text']
+    labels = test['label'].values
+
     tokenized_texts = [tokenizer.tokenize(sent) for sent in test_document_bert]
 
     input_ids = [tokenizer.convert_tokens_to_ids(x) for x in tokenized_texts]
@@ -91,16 +103,8 @@ def koberPreProcessing(test, train):
         seq_mask = [float(i > 0) for i in seq]
         attention_masks.append(seq_mask)
 
-    test_inputs, validation_inputs, test_labels, validation_labels = \
-        train_test_split(input_ids, train['text'].values, random_state=42, test_size=0.1)
-
-    train_masks, validation_masks, _, _ = train_test_split(attention_mask,
-                                                           input_ids,
-                                                           random_state=42,
-                                                           test_size=0.1)
-
     test_inputs = torch.tensor(input_ids)
-    test_labels = torch.tensor(test_labels)
+    test_labels = torch.tensor(labels)
     test_masks = torch.tensor(attention_masks)
 
     test_data = TensorDataset(test_inputs, test_masks, test_labels)
@@ -174,10 +178,13 @@ def newsStockProcessing():
 
 def koBERTClassification(train_dataloader):
     """분류를 위한 BERT 모델 생성"""
+
+    print('분류를 위한 BERT 모델 생성 작업 중 - ')
     model = BertForSequenceClassification.from_pretrained("bert-base-multilingual-cased", num_labels=1)
     model.cuda()
 
     """학습 스케줄링"""
+    print('학습 스케줄링 중 - ')
     optimizer = AdamW(model.parameters(), lr=2e-5, eps=1e-8)
     epochs = 4
     total_steps = len(train_dataloader) * epochs
@@ -335,6 +342,8 @@ if __name__ == '__main__':
     # newsStockProcessing()
     test, train = newsDataProcessing()
     test_dataloader, train_dataloader, validation_dataloader = koberPreProcessing(test, train)
+
+
     epochs, scheduler, optimizer, model = koBERTClassification(train_dataloader)
 
     if torch.cuda.is_available():
