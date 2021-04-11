@@ -20,7 +20,7 @@ stock=stock[::-1]
 # print (stock[-20:])
 
 #이동평균 적용
-stock.rolling('3d').mean()
+stock=stock.rolling('3d').mean()
 
 news=pd.read_csv('data/news/카카오_2020.01.01_2020.12.31_3.csv')
 
