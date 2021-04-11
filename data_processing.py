@@ -22,8 +22,6 @@ stock=stock[::-1]
 #이동평균 적용
 stock.rolling('3d').mean()
 
-# In[ ]:
-
 news=pd.read_csv('data/news/카카오_2020.01.01_2020.12.31_3.csv')
 
 #temp code(remove whitespaces)
@@ -35,6 +33,9 @@ news['time']=pd.to_datetime(news['time'].map(dateutil.parser.parse))
 news=news.sort_values('time')
 
 labeled_data = pd.merge_asof(news,stock,left_on='time',right_on='날짜',direction='forward')
+
+labeled_data['text']=labeled_data['text'].str.split('.')
+labeled_data=labeled_data.explode('text')
 labeled_data.dropna().to_csv('data/labeled/kakao2020.csv')
 
 # In[]
