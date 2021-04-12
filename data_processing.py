@@ -9,7 +9,7 @@ stock.index=pd.to_datetime(stock.index,format='%Y년 %m월 %d일')+pd.DateOffset
 #결측값 제거
 stock = stock[stock.index.dayofweek!=6]
 stock = stock[stock['거래량']!='-']
-stock['변동 %']=stock['변동 %'].str.rstrip('%').astype('float')/100
+stock['변동 %']=stock['변동 %'].str.rstrip('%').astype('float32')/100
 
 stock=stock[['변동 %']]
 stock=stock[::-1]
