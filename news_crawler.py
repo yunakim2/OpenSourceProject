@@ -1,8 +1,4 @@
-#!/usr/bin/env python
-# coding: utf-8
-
 # In[ ]:
-
 
 import sys, os
 import requests
@@ -16,16 +12,8 @@ from datetime import datetime,timedelta,date
 import pickle, progressbar, json, glob, time
 from tqdm import tqdm
 
-
-# In[ ]:
-
-
 # Config
 sleep_sec = 0.5
-
-
-# In[ ]:
-
 
 # Date Utility
 def date_range(start_date, end_date):
@@ -34,30 +22,32 @@ def date_range(start_date, end_date):
 def parse_date(s):
     return datetime.strptime(s, '%Y.%m.%d')
 
-
-# In[ ]:
-
-
+# In[]:
 # Press Crawler
 press_list=['매일경제']
 def crawling_main_text(url):
-    req = requests.get(url)
-    req.encoding = None
-    soup = BeautifulSoup(req.text, 'html.parser')
-    try:
-        text = soup.find('div', {'class' : 'view_txt'}).text
-    except:
+    if 'news.mk.co.kr' in url:
+        req = requests.get(url)
+        req.encoding = None
+        soup = BeautifulSoup(req.text, 'html.parser')
         try:
-            text = soup.find('div', {'class' : 'art_txt'}).text
+            text = soup.find('div', {'class' : 'view_txt'}).text
         except:
-            return None,None
-    text=text.replace('\n','').replace('\r','').replace('<br>','').replace('\t','')
-		time_text=soup.find('li',{'class':'lasttime'}).text.replace('\n','').replace('\r','').replace('<br>','').replace('\t','')
-		return text,time_text
+            try:
+                text = soup.find('div', {'class' : 'art_txt'}).text
+            except:
+                return None,None
+        text=text.replace('\n','').replace('\r','').replace('<br>','').replace('\t','')
+        time_text=soup.find('li',{'class':'lasttime'}).text.replace('\n','').replace('\r','').replace('<br>','').replace('\t','')
+        return text,time_text
+    elif 'news.naver.com' in url:
+        pass
+    else:
+        return None,None
+# In[]:
 
-# In[ ]:
 
-
+# In[]:
 # Naver Crawler
 keyword = input('Keyword: ')
 news_num_per_day = int(input('crawl count per day: '))
@@ -138,14 +128,9 @@ for date in date_range(date_start,date_end):
 browser.close()
 print('\nDone')
 
-
-# In[ ]:
-
-
 # Save
 news_df = DataFrame(dict(enumerate(news_list))).T
 folder_path = os.getcwd()
 file_name = '{}_{}_{}_{}.csv'.format(keyword,date_start.strftime('%Y.%m.%d'),date_end.strftime('%Y.%m.%d'),news_num_per_day)
 news_df.to_csv(file_name)
 print('Saved at {}\\{}'.format(folder_path,file_name))
-
