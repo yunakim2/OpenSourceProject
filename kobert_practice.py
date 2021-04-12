@@ -36,7 +36,7 @@ import torchvision.datasets as dsets
 # from google.colab import files
 # uploaded = files.upload()
 
-data = pd.read_csv('data/kakao2020.csv', encoding='utf-8')
+data = pd.read_csv('data/kakao2020.csv', encoding='utf-8', dtype={'label':np.float32})
 
 test_cnt = int(data.shape[0] * 0.25)
 
@@ -94,7 +94,7 @@ validation_masks = torch.tensor(validation_masks)
 
 '''배치 및 데이터로더 설정'''
 print('배치 및 데이터 로더 설정 중 - ')
-BATCH_SIZE = 1#32
+BATCH_SIZE = 32
 train_data = TensorDataset(train_inputs, train_masks, train_labels)
 train_sampler = RandomSampler(train_data)
 train_dataloader = DataLoader(train_data, sampler=train_sampler, batch_size=BATCH_SIZE)
@@ -141,7 +141,7 @@ else:
 print('분류를 위한 BERT 모델 생성 작업 중 - ')
 model = BertForSequenceClassification.from_pretrained("bert-base-multilingual-cased", num_labels=1)
 model.to(device)#cuda()
-model.double()
+#model.double()
 
 """학습 스케줄링"""
 print('학습 스케줄링 중 - ')
