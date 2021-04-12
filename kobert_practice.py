@@ -36,7 +36,7 @@ import torchvision.datasets as dsets
 # from google.colab import files
 # uploaded = files.upload()
 
-data = pd.read_csv('data/kakao2020_processing_data.csv', encoding='utf-8')
+data = pd.read_csv('data/kakao2020.csv', encoding='utf-8')
 
 test_cnt = int(data.shape[0] * 0.25)
 
@@ -52,19 +52,15 @@ train = data[test_cnt:]
 
 """kobert - test, train 데이터 전처리"""
 
-train_document_bert = train['text']
-print(train_document_bert[:5])
-
 '''사전 학습된 BERT multilingual 모델 내 포함되어있는 토크나이저를 활용하여 토크나이징 함'''
-print("토그나이징 작업 중 - ")
+print("토크나이징 작업 중 - ")
 tokenizer = BertTokenizer.from_pretrained('bert-base-multilingual-cased', do_lower_case=False)
-tokenized_texts = [tokenizer.tokenize(s) for s in train_document_bert]
-print(tokenized_texts[0])
+input_ids = [tokenizer.encode(s) for s in train['text']]
+print(tokenizer.decode(input_ids[0]))
 
 '''패딩 과정'''
 print('패딩 작업 중 - ')
 MAX_LEN = 128
-input_ids = [tokenizer.convert_tokens_to_ids(x) for x in tokenized_texts]
 input_ids = pad_sequences(input_ids, maxlen=MAX_LEN, dtype='long', truncating='post', padding='post')
 print(input_ids[0])
 
@@ -109,12 +105,9 @@ validation_dataloader = DataLoader(validation_data, sampler=validation_sampler, 
 
 """테스트 셋 전처리"""
 print('테스트 셋 전처리 중 - ')
-test_document_bert = test['text']
 labels = test['label'].values
 
-tokenized_texts = [tokenizer.tokenize(sent) for sent in test_document_bert]
-
-input_ids = [tokenizer.convert_tokens_to_ids(x) for x in tokenized_texts]
+input_ids = [tokenizer.encode(sent) for sent in test['text']]
 input_ids = pad_sequences(input_ids, maxlen=MAX_LEN, dtype="long", truncating="post", padding="post")
 attention_masks = []
 for seq in input_ids:
@@ -156,13 +149,6 @@ optimizer = AdamW(model.parameters(), lr=2e-5, eps=1e-8)
 epochs = 4
 total_steps = len(train_dataloader) * epochs
 scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=0, num_training_steps=total_steps)
-
-
-def flat_accuracy(preds, labels):
-    """학습 - accuracy"""
-    pred_flat = np.argmax(preds, axis=1).flatten()
-    labels_flat = labels.flatten()
-    return np.sum(pred_flat == labels_flat) / len(labels_flat)
 
 
 def format_time(elapsed):
@@ -216,6 +202,7 @@ for epoch_i in range(0, epochs):
 
     # 데이터로더에서 배치만큼 반복하여 가져옴
     for step, batch in enumerate(train_dataloader):
+        print('step: {}/{}({:.2f}%)'.format(step,len(train_dataloader),step*100/len(train_dataloader)))
         # 경과 정보 표시
         if step % 500 == 0 and not step == 0:
             elapsed = format_time(time.time() - t0)
@@ -256,7 +243,7 @@ for epoch_i in range(0, epochs):
     avg_train_loss = total_loss / len(train_dataloader)
 
     print("")
-    print("  Average training loss: {0:.2f}".format(avg_train_loss))
+    print("  Average training loss: {0:.8f}".format(avg_train_loss))
     print("  Training epcoh took: {:}".format(format_time(time.time() - t0)))
 
     # ========================================
@@ -273,8 +260,7 @@ for epoch_i in range(0, epochs):
     model.eval()
 
     # 변수 초기화
-    eval_loss, eval_accuracy = 0, 0
-    nb_eval_steps, nb_eval_examples = 0, 0
+    eval_mae=0
 
     # 데이터로더에서 배치만큼 반복하여 가져옴
     for batch in validation_dataloader:
@@ -290,20 +276,14 @@ for epoch_i in range(0, epochs):
             outputs = model(b_input_ids,
                             token_type_ids=None,
                             attention_mask=b_input_mask)
+        
+        pred = outputs[0].detach().cpu().numpy()
+        real = b_labels.to('cpu').numpy()
 
-        # 로스 구함
-        logits = outputs[0]
+        # 출력값과 라벨값을 비교하여 Mean Absolute Error계산
+        eval_mae += np.mean(np.abs(pred-real))
 
-        # CPU로 데이터 이동
-        logits = logits.detach().cpu().numpy()
-        label_ids = b_labels.to('cpu').numpy()
-
-        # 출력 로짓과 라벨을 비교하여 정확도 계산
-        tmp_eval_accuracy = flat_accuracy(logits, label_ids)
-        eval_accuracy += tmp_eval_accuracy
-        nb_eval_steps += 1
-
-    print("  Accuracy: {0:.2f}".format(eval_accuracy / nb_eval_steps))
+    print("  Validation MAE: {0:.8f}".format(eval_mae / len(validation_dataloader)))
     print("  Validation took: {:}".format(format_time(time.time() - t0)))
 
 print("")
@@ -316,8 +296,7 @@ t0 = time.time()
 model.eval()
 
 # 변수 초기화
-eval_loss, eval_accuracy = 0, 0
-nb_eval_steps, nb_eval_examples = 0, 0
+eval_mae=0
 
 # 데이터로더에서 배치만큼 반복하여 가져옴
 for step, batch in enumerate(test_dataloader):
@@ -339,20 +318,15 @@ for step, batch in enumerate(test_dataloader):
                         token_type_ids=None,
                         attention_mask=b_input_mask)
 
-    # 로스 구함
-    logits = outputs[0]
+    pred = outputs[0].detach().cpu().numpy()
+    real = b_labels.to('cpu').numpy()
 
-    # CPU로 데이터 이동
-    logits = logits.detach().cpu().numpy()
-    label_ids = b_labels.to('cpu').numpy()
-
-    # 출력 로짓과 라벨을 비교하여 정확도 계산
-    tmp_eval_accuracy = flat_accuracy(logits, label_ids)
-    eval_accuracy += tmp_eval_accuracy
-    nb_eval_steps += 1
+    # 출력값과 라벨값을 비교하여 Mean Absolute Error계산
+    eval_mae += np.mean(np.abs(pred-real))
 
 print("")
-print("Accuracy: {0:.2f}".format(eval_accuracy / nb_eval_steps))
+print("Test MAE: {0:.8f}".format(eval_mae / len(test_dataloader)))
 print("Test took: {:}".format(format_time(time.time() - t0)))
 
 # %%
+
