@@ -36,12 +36,18 @@ import torchvision.datasets as dsets
 # from google.colab import files
 # uploaded = files.upload()
 
-data = pd.read_csv('data/kakao2020.csv', encoding='utf-8', dtype={'label':np.float32})
+# In[]
+data = pd.read_csv('data/labeled/kakao_all.csv', encoding='utf-8', dtype={'label':np.float32})
 
 test_cnt = int(data.shape[0] * 0.25)
 
 test = data[:test_cnt]
 train = data[test_cnt:]
+
+#test의 중간값(MAE가 최소가 되는 상수값)기준의 AAD계산(성능평가기준점 역할)
+print('TestSet AAD: {}'.format(test['label'].mad()))
+
+# In[]
 
 '''colab cuda 실행'''
 #
