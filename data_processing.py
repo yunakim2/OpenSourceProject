@@ -2,7 +2,7 @@
 
 import pandas as pd
 
-stock=pd.read_csv('data/stock/kakao2020.csv')
+stock=pd.read_csv('data/stock/kakao_all.csv')
 stock=stock.set_index('날짜')
 stock.index=pd.to_datetime(stock.index,format='%Y년 %m월 %d일')+pd.DateOffset(hours=15,minutes=30)
 
@@ -22,11 +22,11 @@ stock=stock[::-1]
 #이동평균 적용
 stock=stock.rolling('3d').mean()
 
-news=pd.read_csv('data/news/카카오_2020.01.01_2020.12.31_3.csv')
+news=pd.read_csv('data/news/카카오_2017.08.01_2021.04.11_3.csv')
 
 #temp code(remove whitespaces)
-news=news.dropna()
-news['time']=news['time'].replace(u'(입력 :)|(수정 :.*)|(\xa0)|\n|\t','',regex=True).str.strip(' ')
+#news=news.dropna()
+#news['time']=news['time'].replace(u'(입력 :)|(수정 :.*)|(\xa0)|\n|\t','',regex=True).str.strip(' ')
 
 import dateutil.parser
 news['time']=pd.to_datetime(news['time'].map(dateutil.parser.parse))
@@ -40,4 +40,4 @@ labeled_data = pd.merge_asof(news,stock,left_on='time',right_on='날짜',directi
 labeled_data=labeled_data.drop(columns=['Unnamed: 0'])
 labeled_data=labeled_data.rename(columns={'변동 %':'label'})
 
-labeled_data.dropna().to_csv('data/labeled/kakao2020.csv')
+labeled_data.dropna().to_csv('data/labeled/kakao_all.csv')
