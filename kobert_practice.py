@@ -62,7 +62,7 @@ MAX_LEN = 128*4
 '''사전 학습된 BERT multilingual 모델 내 포함되어있는 토크나이저를 활용하여 토크나이징 함'''
 print("토크나이징 작업 중 - ")
 tokenizer = BertTokenizer.from_pretrained('bert-base-multilingual-cased', do_lower_case=False)
-input_ids = [tokenizer.encode(s,max_length=MAX_LEN) for s in train['text']]
+input_ids = [tokenizer.encode(s,max_length=MAX_LEN,truncation=True) for s in train['text']]
 print(tokenizer.decode(input_ids[0]))
 
 '''패딩 과정'''
@@ -113,7 +113,7 @@ validation_dataloader = DataLoader(validation_data, sampler=validation_sampler, 
 print('테스트 셋 전처리 중 - ')
 labels = test['label'].values
 
-input_ids = [tokenizer.encode(sent,max_length=MAX_LEN) for sent in test['text']]
+input_ids = [tokenizer.encode(sent,max_length=MAX_LEN,truncation=True) for sent in test['text']]
 input_ids = pad_sequences(input_ids, maxlen=MAX_LEN, dtype="long", truncating="post", padding="post")
 attention_masks = []
 for seq in input_ids:
