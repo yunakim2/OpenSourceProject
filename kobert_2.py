@@ -31,6 +31,24 @@ import torch
 import torch.nn as nn
 import torchvision.datasets as dsets
 
+import torch
+from torch import nn
+import torch.nn.functional as F
+import torch.optim as optim
+from torch.utils.data import Dataset, DataLoader
+import gluonnlp as nlp
+import numpy as np
+from tqdm import tqdm, tqdm_notebook
+
+from kobert.utils import get_tokenizer
+from kobert.pytorch_kobert import get_pytorch_kobert_model
+from transformers import AdamW
+from transformers.optimization import get_cosine_schedule_with_warmup
+
+bertmodel, vocab = get_pytorch_kobert_model()
+bert_tokenizer = nlp.data.BERTSPTokenizer(get_tokenizer(), vocab, lower=False)
+# transform = nlp.data.BERTSentenceTransform(bert_tokenizer, max_seq_length=max_len, pad=pad, pair=pair)
+
 '''colab 데이터 삽입 부분'''
 # data = pd.read_csv(io.StringIO(uploaded['kakao2020_processing_data.csv'].decode('utf-8')))
 # from google.colab import files
@@ -62,7 +80,21 @@ print('TestSet AAD: {}'.format(test['label'].mad()))
 print("토크나이징 작업 중 - ")
 tokenizer = BertTokenizer.from_pretrained('bert-base-multilingual-cased', do_lower_case=False)
 input_ids = [tokenizer.encode(s) for s in train['text']]
+MAX_LEN = 128
+input_ids = pad_sequences(input_ids, maxlen=MAX_LEN, dtype='long', truncating='post', padding='post')
+print(input_ids[0])
 print(tokenizer.decode(input_ids[0]))
+#In[]
+# for s in train['text']:
+# 	print(tokenizer.encode(s[:30]))
+# 	print(tokenizer.decode(tokenizer.encode(s[:30])))
+# 	break
+
+print(input_ids[0])
+print(tokenizer.decode(input_ids[0]))
+#In[]
+self.sentences = [transform([i[sent_idx]]) for i in dataset]
+self.labels = [np.int32(i[label_idx]) for i in dataset]
 
 '''패딩 과정'''
 print('패딩 작업 중 - ')
@@ -144,10 +176,51 @@ else:
 
 """분류를 위한 BERT 모델 생성"""
 
+class BERTClassifier(nn.Module):
+    def __init__(self,
+                 bert,
+                 hidden_size = 768,
+                 num_classes=1,
+                 dr_rate=None,
+                 params=None):
+        super(BERTClassifier, self).__init__()
+        self.bert = bert
+        self.dr_rate = dr_rate
+                 
+        self.classifier = nn.Linear(hidden_size , num_classes)
+        if dr_rate:
+            self.dropout = nn.Dropout(p=dr_rate)
+    
+    def gen_attention_mask(self, token_ids, valid_length):
+        attention_mask = torch.zeros_like(token_ids)
+        for i, v in enumerate(valid_length):
+            attention_mask[i][:v] = 1
+        return attention_mask.float()
+
+    def forward(self, token_ids, valid_length, segment_ids):
+        attention_mask = self.gen_attention_mask(token_ids, valid_length)
+        
+        _, pooler = self.bert(input_ids = token_ids, token_type_ids = segment_ids.long(), attention_mask = attention_mask.float().to(token_ids.device))
+        if self.dr_rate:
+            out = self.dropout(pooler)
+        return self.classifier(out)
+
 print('분류를 위한 BERT 모델 생성 작업 중 - ')
-model = BertForSequenceClassification.from_pretrained("bert-base-multilingual-cased", num_labels=1)
-model.to(device)#cuda()
-#model.double()
+# model = BertForSequenceClassification.from_pretrained("bert-base-multilingual-cased", num_labels=1)
+# model.to(device)#cuda()
+# #model.double()
+model = BERTClassifier(bertmodel,  dr_rate=0.5).to(device)
+
+# Prepare optimizer and schedule (linear warmup and decay)
+no_decay = ['bias', 'LayerNorm.weight']
+optimizer_grouped_parameters = [
+    {'params': [p for n, p in model.named_parameters() if not any(nd in n for nd in no_decay)], 'weight_decay': 0.01},
+    {'params': [p for n, p in model.named_parameters() if any(nd in n for nd in no_decay)], 'weight_decay': 0.0}
+]
+
+# optimizer = AdamW(optimizer_grouped_parameters, lr=learning_rate)
+loss_fn = nn.MSELoss()
+
 
 """학습 스케줄링"""
 print('학습 스케줄링 중 - ')
@@ -222,10 +295,10 @@ for epoch_i in range(0, epochs):
         b_input_ids, b_input_mask, b_labels = batch
 
         # Forward 수행                
-        outputs = model(b_input_ids, token_type_ids=None, attention_mask=b_input_mask, labels=b_labels)
+        output = model(b_input_ids, token_type_ids=None, attention_mask=b_input_mask, labels=b_labels)
 
         # 로스 구함
-        loss = outputs[0]
+        loss = loss_fn(output,b_labels)
 
         # 총 로스 계산
         total_loss += loss.item()
@@ -244,6 +317,7 @@ for epoch_i in range(0, epochs):
 
         # 그래디언트 초기화
         model.zero_grad()
+				optimizer.zero_grad()
 
     # 평균 로스 계산
     avg_train_loss = total_loss / len(train_dataloader)

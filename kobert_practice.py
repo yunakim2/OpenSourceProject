@@ -37,7 +37,7 @@ import torchvision.datasets as dsets
 # uploaded = files.upload()
 
 # In[]
-data = pd.read_csv('data/labeled/kakao_all.csv', encoding='utf-8', dtype={'label':np.float32})
+data = pd.read_csv('data/labeled/samsung_2010_2021.csv', encoding='utf-8', dtype={'label':np.float32})
 
 test_cnt = int(data.shape[0] * 0.25)
 
@@ -58,17 +58,17 @@ print('TestSet AAD: {}'.format(test['label'].mad()))
 
 """kobert - test, train 데이터 전처리"""
 
+MAX_LEN = 128*4
 '''사전 학습된 BERT multilingual 모델 내 포함되어있는 토크나이저를 활용하여 토크나이징 함'''
 print("토크나이징 작업 중 - ")
 tokenizer = BertTokenizer.from_pretrained('bert-base-multilingual-cased', do_lower_case=False)
-input_ids = [tokenizer.encode(s) for s in train['text']]
+input_ids = [tokenizer.encode(s,max_length=MAX_LEN) for s in train['text']]
 print(tokenizer.decode(input_ids[0]))
 
 '''패딩 과정'''
 print('패딩 작업 중 - ')
-MAX_LEN = 128
 input_ids = pad_sequences(input_ids, maxlen=MAX_LEN, dtype='long', truncating='post', padding='post')
-print(input_ids[0])
+print(tokenizer.decode(input_ids[0]))
 
 '''어텐션 마스크'''
 '''실 데이터가 있는 곳과 padding이 있는 곳 attention에게 알려줌'''
@@ -100,7 +100,7 @@ validation_masks = torch.tensor(validation_masks)
 
 '''배치 및 데이터로더 설정'''
 print('배치 및 데이터 로더 설정 중 - ')
-BATCH_SIZE = 32
+BATCH_SIZE = 2
 train_data = TensorDataset(train_inputs, train_masks, train_labels)
 train_sampler = RandomSampler(train_data)
 train_dataloader = DataLoader(train_data, sampler=train_sampler, batch_size=BATCH_SIZE)
@@ -113,7 +113,7 @@ validation_dataloader = DataLoader(validation_data, sampler=validation_sampler, 
 print('테스트 셋 전처리 중 - ')
 labels = test['label'].values
 
-input_ids = [tokenizer.encode(sent) for sent in test['text']]
+input_ids = [tokenizer.encode(sent,max_length=MAX_LEN) for sent in test['text']]
 input_ids = pad_sequences(input_ids, maxlen=MAX_LEN, dtype="long", truncating="post", padding="post")
 attention_masks = []
 for seq in input_ids:
@@ -208,9 +208,9 @@ for epoch_i in range(0, epochs):
 
     # 데이터로더에서 배치만큼 반복하여 가져옴
     for step, batch in enumerate(train_dataloader):
-        print('step: {}/{}({:.2f}%)'.format(step,len(train_dataloader),step*100/len(train_dataloader)))
+        #print('step: {}/{}({:.2f}%)'.format(step,len(train_dataloader),step*100/len(train_dataloader)))
         # 경과 정보 표시
-        if step % 500 == 0 and not step == 0:
+        if step % 100 == 0 and not step == 0:
             elapsed = format_time(time.time() - t0)
             print('  Batch {:>5,}  of  {:>5,}.    Elapsed: {:}.'.format(step, len(train_dataloader), elapsed))
 
@@ -336,3 +336,23 @@ print("Test took: {:}".format(format_time(time.time() - t0)))
 
 # %%
 
+
+# %%
+
+# %%
+
+# %%
+
+# %%
+
+# %%
+print('TestSet AAD: {}'.format(test['label']))
+# %%
+
+test_cnt = int(data.shape[0] * 0.25)
+
+test = data[:test_cnt]
+train = data[test_cnt:]
+
+#test의 중간값(MAE가 최소가 되는 상수값)기준의 AAD계산(성능평가기준점 역할)
+print('TestSet AAD: {}'.format(test['label'].mad()))
