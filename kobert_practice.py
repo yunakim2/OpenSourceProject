@@ -278,12 +278,8 @@ for epoch_i in range(0, epochs):
 
         # 그래디언트 계산 안함
         with torch.no_grad():
-            # Forward 수행
-            outputs = model(b_input_ids,
-                            token_type_ids=None,
-                            attention_mask=b_input_mask)
-        
-        pred = outputs[0].detach().cpu().numpy()
+            outputs = model(b_input_ids,token_type_ids=None,attention_mask=b_input_mask)
+        pred = outputs[1].detach().cpu().numpy()
         real = b_labels.to('cpu').numpy()
 
         # 출력값과 라벨값을 비교하여 Mean Absolute Error계산
@@ -319,15 +315,9 @@ for step, batch in enumerate(test_dataloader):
 
     # 그래디언트 계산 안함
     with torch.no_grad():
-        # Forward 수행
-        outputs = model(b_input_ids,
-                        token_type_ids=None,
-                        attention_mask=b_input_mask)
-
-    pred = outputs[0].detach().cpu().numpy()
+        outputs = model(b_input_ids,token_type_ids=None,attention_mask=b_input_mask)
+    pred = outputs[1].detach().cpu().numpy()
     real = b_labels.to('cpu').numpy()
-
-    # 출력값과 라벨값을 비교하여 Mean Absolute Error계산
     eval_mae += np.mean(np.abs(pred-real))
 
 print("")
