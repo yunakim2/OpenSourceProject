@@ -35,7 +35,8 @@ import torchvision.datasets as dsets
 # from google.colab import files
 # uploaded = files.upload()
 
-data = pd.read_csv('data/kakao2020_processing_data.csv', encoding='utf-8')
+# In[]
+data = pd.read_csv('data/labeled/samsung_2010_2021.csv', encoding='utf-8', dtype={'label':np.float32})
 
 test_cnt = int(data.shape[0] * 0.25)
 

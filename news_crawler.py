@@ -76,7 +76,7 @@ for date in date_range(date_start,date_end):
                 if not button_next:
                   break
                 button_next.click()
-                time.sleep(sleep_sec)
+            time.sleep(sleep_sec)
     except Exception as e:
         print('\n',e)
         pass

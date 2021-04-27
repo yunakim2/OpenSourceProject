@@ -1,6 +1,7 @@
 # In[ ]:
 
 import pandas as pd
+import dateutil.parser
 
 stock=pd.read_csv('data/stock/삼성전자2010.csv')
 stock=stock.set_index('Date')
@@ -12,6 +13,7 @@ stock = stock.dropna(how='any',axis=0)
 stock['Change'] = stock['Close'].astype('float').pct_change()
 
 stock=stock[['Change']]
+stock=stock.sort_values('Date')
 
 #이동평균 적용
 stock=stock.rolling('3d').mean()
@@ -22,7 +24,6 @@ news=pd.read_csv('data/news/삼성전자_2010.01.01_2021.04.12_3.csv')
 #news=news.dropna()
 #news['time']=news['time'].replace(u'(입력 :)|(수정 :.*)|(\xa0)|\n|\t','',regex=True).str.strip(' ')
 
-import dateutil.parser
 news['time']=pd.to_datetime(news['time'].map(dateutil.parser.parse))
 news=news.sort_values('time')
 
@@ -35,3 +36,4 @@ labeled_data=labeled_data.drop(columns=['Unnamed: 0'])
 labeled_data=labeled_data.rename(columns={'Change':'label'})
 
 labeled_data.dropna().to_csv('data/labeled/samsung_2010_2021.csv')
+# %%
