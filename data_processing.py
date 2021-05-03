@@ -1,57 +1,39 @@
+# In[ ]:
+
 import pandas as pd
-import datetime
+import dateutil.parser
 
-"""뉴스 데이터와 주식 데이터 날짜별로 주식변동량 추가 후 , 저장"""
+stock=pd.read_csv('data/stock/삼성전자2010.csv')
+stock=stock.set_index('Date')
+stock.index=pd.to_datetime(stock.index.map(dateutil.parser.parse)+pd.DateOffset(hours=15,minutes=30))
 
+#결측값 제거
+stock = stock[stock.index.dayofweek!=6]#이거 필요한가?
+stock = stock.dropna(how='any',axis=0)
+stock['Change'] = stock['Close'].astype('float').pct_change()
 
-def newsStockProcessing():
-    """뉴스 데이터와 주식 변동량을 labeling 하는 작업"""
-    data = pd.read_csv("data/카카오_2020.01.01_2020.12.31_3.csv", encoding='utf-8')
-    '''news_data label 열 추가'''
-    data['label'] = 0.0
-    stock = pd.read_csv("data/stock/kakao2020.csv")
-    stock = stock[::-1]
-    i = 0
-    for idx in range(len(stock)):
-        print(idx, stock.iloc[idx]['날짜'], stock.iloc[idx]['변동 %'])
-        while True:
-            tmp_stock_date = stock.iloc[idx]['날짜']
-            tmp_stock_date = tmp_stock_date.replace('년', '').replace('월', '').replace('일', '')
-            tmp_stock_date = tmp_stock_date.split(" ")
-            stock_date = datetime.date(int(tmp_stock_date[0]), int(tmp_stock_date[1]), int(tmp_stock_date[2]))
-            tmp_news_date = data.iloc[i]['date']
-            tmp_news_date = tmp_news_date.split(".")
-            news_date = datetime.date(int(tmp_news_date[0]), int(tmp_news_date[1]), int(tmp_news_date[2]))
-            date_diff = stock_date - news_date
-            print(date_diff.days, news_date, data.iloc[i]['title'])
-            if date_diff.days <= 0:
-                break
+stock=stock[['Change']]
+stock=stock.sort_values('Date')
 
-            if date_diff.days == 1:
-                data.loc[i, 'label'] = float(stock.iloc[idx]['변동 %'].replace('%', ''))
+#이동평균 적용
+stock=stock.rolling('3d').mean()
 
-            i += 1
+news=pd.read_csv('data/news/삼성전자_2010.01.01_2021.04.12_3.csv')
 
-    np_title = []
-    np_url = []
-    np_text = []
-    np_date = []
-    np_label = []
+#temp code(remove whitespaces)
+#news=news.dropna()
+#news['time']=news['time'].replace(u'(입력 :)|(수정 :.*)|(\xa0)|\n|\t','',regex=True).str.strip(' ')
 
-    for idx in range(len(data)):
-        split_text = data.iloc[idx]['text'].split('.')
-        for s in split_text:
-            np_text.append("[CLS]" + str(s) + "[SEP]")
-            np_title.append(data.iloc[idx]['title'])
-            np_url.append(data.iloc[idx]['url'])
-            np_date.append(data.iloc[idx]['date'])
-            np_label.append(data.iloc[idx]['label'])
+news['time']=pd.to_datetime(news['time'].map(dateutil.parser.parse))
+news=news.sort_values('time')
 
-    data_df = pd.DataFrame({'title': np_title, 'url': np_url, 'text': np_text, 'date': np_date, 'label': np_label})
+labeled_data = pd.merge_asof(news,stock,left_on='time',right_on='Date',direction='forward')
 
-    file_name = "data/kakao2020_processing_data.csv"
-    data_df.to_csv(file_name)
+#labeled_data['text']=labeled_data['text'].str.split('.')
+#labeled_data=labeled_data.explode('text')
 
+labeled_data=labeled_data.drop(columns=['Unnamed: 0'])
+labeled_data=labeled_data.rename(columns={'Change':'label'})
 
-if __name__ == '__main__':
-    newsStockProcessing()
+labeled_data.dropna().to_csv('data/labeled/samsung_2010_2021.csv')
+# %%
