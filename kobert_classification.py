@@ -108,7 +108,23 @@ validation_data = TensorDataset(validation_inputs, validation_masks, validation_
 validation_sampler = SequentialSampler(validation_data)
 validation_dataloader = DataLoader(validation_data, sampler=validation_sampler, batch_size=BATCH_SIZE)
 
+print('test data processing')
+input_ids = np.array([tokenizer([i])[0] for i in test['text']]).astype(int)
+print(vocab.to_tokens([int(i) for i in input_ids[0][:20]]))
 
+
+attention_masks = []
+for seq in input_ids:
+    seq_mask = [float(i > 0) for i in seq]
+    attention_masks.append(seq_mask)
+
+test_inputs = torch.tensor(input_ids)
+test_labels = torch.tensor(test['label'].values)
+test_masks = torch.tensor(attention_masks)
+
+test_data = TensorDataset(test_inputs, test_masks, test_labels)
+test_sampler = RandomSampler(test_data)
+test_dataloader = DataLoader(test_data, sampler=test_sampler, batch_size=BATCH_SIZE)
 
 """분류를 위한 BERT 모델 생성"""
 
