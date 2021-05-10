@@ -8,7 +8,6 @@ stock=stock.set_index('Date')
 stock.index=pd.to_datetime(stock.index.map(dateutil.parser.parse)+pd.DateOffset(hours=15,minutes=30))
 
 #결측값 제거
-stock = stock[stock.index.dayofweek!=6]#이거 필요한가?
 stock = stock.dropna(how='any',axis=0)
 stock['Change'] = stock['Close'].astype('float').pct_change()
 
@@ -16,7 +15,7 @@ stock=stock[['Change']]
 stock=stock.sort_values('Date')
 
 #이동평균 적용
-stock=stock.rolling('3d').mean()
+# stock=stock.rolling('3d').mean()
 
 news=pd.read_csv('data/news/삼성전자_2010.01.01_2021.04.12_3.csv')
 

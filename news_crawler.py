@@ -11,16 +11,11 @@ import re
 from datetime import datetime,timedelta,date
 import pickle, progressbar, json, glob, time
 from tqdm import tqdm
+import pandas as pd
+import dateutil.parser
 
 # Config
 sleep_sec = 0.5
-
-# Date Utility
-def date_range(start_date, end_date):
-    for n in range(int((end_date - start_date + timedelta(1)).days)):
-        yield start_date + timedelta(n)
-def parse_date(s):
-    return datetime.strptime(s, '%Y.%m.%d')
 
 # Article Crawler
 def crawling_main_text(url):
@@ -41,16 +36,23 @@ def crawling_main_text(url):
 
 # Newslist Crawler
 keyword = input('Keyword: ')
-news_num_per_day = int(input('crawl count per day: '))
-date_start = parse_date(input('start date(YYYY.MM.DD): '))
-date_end = parse_date(input('end date(YYYY.MM.DD): '))
+news_num_per_day = 1
+
+stock = pd.read_csv('data/stock/kakao_test.csv')
+stock['Date']=pd.to_datetime(stock['Date'].map(dateutil.parser.parse)+pd.DateOffset(hours=15,minutes=30))
+stock.sort_values('Date')
+stock=stock.set_index('Date')
+stock = stock.dropna(how='any',axis=0)
+stock['Change'] = stock['Close'].astype('float').pct_change()
+stock=stock[['Change']]
 
 driver_path = '/usr/bin/chromedriver'
 browser = webdriver.Chrome(driver_path)
 
 news_list=[]
-for date in date_range(date_start,date_end):
-    news_url = 'https://m.search.naver.com/search.naver?where=m_news&query={0}&sm=mtb_tnw&sort=0&photo=0&field=0&pd=3&ds={1}&de={1}'.format(keyword,date.strftime('%Y.%m.%d'))
+
+for ds,de in zip(stock.index[0:],stock.index[1:]):
+    news_url = 'https://m.search.naver.com/search.naver?where=m_news&query={0}&sm=mtb_tnw&sort=0&photo=0&field=0&pd=3&ds={1}&de={2}'.format(keyword,ds.strftime('%Y.%m.%d'),de.strftime('%Y.%m.%d'))
     browser.get(news_url)
     time.sleep(sleep_sec)
 
@@ -66,8 +68,9 @@ for date in date_range(date_start,date_end):
                 title = i.find_element_by_xpath('./div').text
                 url = i.get_attribute('href')
                 text,text_time = crawling_main_text(url)
-                if text:
-                    news_list.append({'title':title,'url':url,'text':text,'date':date.strftime('%Y.%m.%d'),'time':text_time})
+                text_time_dt=dateutil.parser.parse(text_time)
+                if text and ds<text_time_dt and text_time_dt<de:
+                    news_list.append({'title':title,'url':url,'text':text,'time':text_time})
                     idx += 1
                     pbar.update(1)
             
@@ -87,7 +90,7 @@ print('\nDone')
 # Save
 news_df = DataFrame(dict(enumerate(news_list))).T
 folder_path = os.getcwd()
-file_name = '{}_{}_{}_{}.csv'.format(keyword,date_start.strftime('%Y.%m.%d'),date_end.strftime('%Y.%m.%d'),news_num_per_day)
+file_name = 'test.csv'
 news_df.to_csv(file_name)
 print('Saved at {}/{}'.format(folder_path,file_name))
 # %%
