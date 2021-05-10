@@ -14,20 +14,11 @@ stock['Change'] = stock['Close'].astype('float').pct_change()
 stock=stock[['Change']]
 stock=stock.sort_values('Date')
 
-#이동평균 적용
-# stock=stock.rolling('3d').mean()
-
 news=pd.read_csv('data/news/kakao.csv')
-
-#temp code(remove whitespaces)
-#news=news.dropna()
-#news['time']=news['time'].replace(u'(입력 :)|(수정 :.*)|(\xa0)|\n|\t','',regex=True).str.strip(' ')
-
 news['time']=pd.to_datetime(news['time'].map(dateutil.parser.parse))
 news=news.sort_values('time')
 
 news['text']=news['text'].str.replace(input('keyword'),'종목명')
-
 labeled_data = pd.merge_asof(news,stock,left_on='time',right_on='Date',direction='forward')
 
 #labeled_data['text']=labeled_data['text'].str.split('.')

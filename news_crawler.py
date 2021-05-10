@@ -50,7 +50,6 @@ driver_path = '/usr/bin/chromedriver'
 browser = webdriver.Chrome(driver_path)
 
 news_list=[]
-
 for ds,de in zip(stock.index[0:],stock.index[1:]):
     news_url = 'https://m.search.naver.com/search.naver?where=m_news&query={0}&sm=mtb_tnw&sort=0&photo=0&field=0&pd=3&ds={1}&de={2}'.format(keyword,ds.strftime('%Y.%m.%d'),de.strftime('%Y.%m.%d'))
     browser.get(news_url)
