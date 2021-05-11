@@ -16,15 +16,7 @@ stock['Change'] = stock['Close'].astype('float').pct_change()
 stock=stock[['Change']]
 stock=stock.sort_values('Date')
 
-#이동평균 적용
-# stock=stock.rolling('3d').mean()
-
 news=pd.read_csv('data/news/{}.csv'.format(keyword))
-
-#temp code(remove whitespaces)
-#news=news.dropna()
-#news['time']=news['time'].replace(u'(입력 :)|(수정 :.*)|(\xa0)|\n|\t','',regex=True).str.strip(' ')
-
 news['time']=pd.to_datetime(news['time'].map(dateutil.parser.parse))
 news=news.sort_values('time')
 
