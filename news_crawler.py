@@ -38,7 +38,7 @@ def crawling_main_text(url):
 keyword = input('Keyword: ')
 news_num_per_day = 1
 
-stock = pd.read_csv('data/stock/kakao_test.csv')
+stock = pd.read_csv('data/stock/{}.csv'.format(keyword))
 stock['Date']=pd.to_datetime(stock['Date'].map(dateutil.parser.parse)+pd.DateOffset(hours=15,minutes=30))
 stock.sort_values('Date')
 stock=stock.set_index('Date')
@@ -68,11 +68,12 @@ for ds,de in zip(stock.index[0:],stock.index[1:]):
                 title = i.find_element_by_xpath('./div').text
                 url = i.get_attribute('href')
                 text,text_time = crawling_main_text(url)
-                text_time_dt=dateutil.parser.parse(text_time)
-                if text and ds<text_time_dt and text_time_dt<de:
-                    news_list.append({'title':title,'url':url,'text':text,'time':text_time})
-                    idx += 1
-                    pbar.update(1)
+                if text_time:
+                  text_time_dt=dateutil.parser.parse(text_time)
+                  if text and ds<text_time_dt and text_time_dt<de:
+                      news_list.append({'title':title,'url':url,'text':text,'time':text_time})
+                      idx += 1
+                      pbar.update(1)
             
             if idx < news_num_per_day:
                 button_next=browser.find_element_by_xpath('//button[@class="btn_next"]')
@@ -90,7 +91,7 @@ print('\nDone')
 # Save
 news_df = DataFrame(dict(enumerate(news_list))).T
 folder_path = os.getcwd()
-file_name = 'test.csv'
+file_name = 'data/news/'+keyword+'.csv'
 news_df.to_csv(file_name)
 print('Saved at {}/{}'.format(folder_path,file_name))
 # %%
