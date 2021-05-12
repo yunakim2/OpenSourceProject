@@ -35,62 +35,65 @@ def crawling_main_text(url):
         return None,None
 
 # Newslist Crawler
-keyword = input('Keyword: ')
-news_num_per_day = 1
+for keyword in os.listdir('data/stock'):
+	keyword=keyword.split('.')[0]
+	news_num_per_day = 1
 
-stock = pd.read_csv('data/stock/{}.csv'.format(keyword))
-stock['Date']=pd.to_datetime(stock['Date'].map(dateutil.parser.parse)+pd.DateOffset(hours=15,minutes=30))
-stock.sort_values('Date')
-stock=stock.set_index('Date')
-stock = stock.dropna(how='any',axis=0)
-stock['Change'] = stock['Close'].astype('float').pct_change()
-stock=stock[['Change']]
+	stock = pd.read_csv('data/stock/{}.csv'.format(keyword))
+	stock['Date']=pd.to_datetime(stock['Date'].map(dateutil.parser.parse)+pd.DateOffset(hours=15,minutes=30))
+	stock.sort_values('Date')
+	stock=stock.set_index('Date')
+	stock = stock.dropna(how='any',axis=0)
+	stock['Change'] = stock['Close'].astype('float').pct_change()
+	stock=stock[['Change']]
 
-driver_path = '/usr/bin/chromedriver'
-browser = webdriver.Chrome(driver_path)
+	driver_path = '/usr/bin/chromedriver'
+	browser = webdriver.Chrome(driver_path)
 
-news_list=[]
-for ds,de in zip(stock.index[0:],stock.index[1:]):
-    news_url = 'https://m.search.naver.com/search.naver?where=m_news&query={0}&sm=mtb_tnw&sort=0&photo=0&field=0&pd=3&ds={1}&de={2}'.format(keyword,ds.strftime('%Y.%m.%d'),de.strftime('%Y.%m.%d'))
-    browser.get(news_url)
-    time.sleep(sleep_sec)
+	news_list=[]
+	for ds,de in zip(stock.index[0:],stock.index[1:]):
+			news_url = 'https://m.search.naver.com/search.naver?where=m_news&query={0}&sm=mtb_tnw&sort=0&photo=0&field=0&pd=3&ds={1}&de={2}'.format(keyword,ds.strftime('%Y.%m.%d'),de.strftime('%Y.%m.%d'))
+			browser.get(news_url)
+			time.sleep(sleep_sec)
 
-    idx = 0
-    pbar = tqdm(total=news_num_per_day)
-    try:
-        while idx < news_num_per_day:
-            news_ul = browser.find_element_by_xpath('//ul[@class="list_news"]')
-            li_list = news_ul.find_elements_by_xpath('./li[@class="bx"]')
-            item_list = [li.find_element_by_xpath('.//a[@class="news_tit"]') for li in li_list]
+			idx = 0
+			pbar = tqdm(total=news_num_per_day)
+			try:
+					while idx < news_num_per_day:
+							news_ul = browser.find_element_by_xpath('//ul[@class="list_news"]')
+							li_list = news_ul.find_elements_by_xpath('./li[@class="bx"]')
+							item_list = [li.find_element_by_xpath('.//a[@class="news_tit"]') for li in li_list]
 
-            for i in item_list[:min(len(item_list), news_num_per_day-idx)]:
-                title = i.find_element_by_xpath('./div').text
-                url = i.get_attribute('href')
-                text,text_time = crawling_main_text(url)
-                if text_time:
-                  text_time_dt=dateutil.parser.parse(text_time)
-                  if text and ds<text_time_dt and text_time_dt<de:
-                      news_list.append({'title':title,'url':url,'text':text,'time':text_time})
-                      idx += 1
-                      pbar.update(1)
-            
-            if idx < news_num_per_day:
-                button_next=browser.find_element_by_xpath('//button[@class="btn_next"]')
-                if not button_next:
-                  break
-                button_next.click()
-            time.sleep(sleep_sec)
-    except Exception as e:
-        print('\n',e)
-        pass
-    pbar.close()
-browser.close()
-print('\nDone')
+							for i in item_list[:min(len(item_list), news_num_per_day-idx)]:
+									title = i.find_element_by_xpath('./div').text
+									if not keyword in title:
+										raise Exception('No keyword in title')
+									url = i.get_attribute('href')
+									text,text_time = crawling_main_text(url)
+									if text_time:
+										text_time_dt=dateutil.parser.parse(text_time)
+										if text and ds<text_time_dt and text_time_dt<de:
+												news_list.append({'title':title,'url':url,'text':text,'time':text_time})
+												idx += 1
+												pbar.update(1)
+							
+							if idx < news_num_per_day:
+									button_next=browser.find_element_by_xpath('//button[@class="btn_next"]')
+									if not button_next:
+										break
+									button_next.click()
+							time.sleep(sleep_sec)
+			except Exception as e:
+					print('\n',e)
+					pass
+			pbar.close()
+	browser.close()
+	print('\nDone')
 
-# Save
-news_df = DataFrame(dict(enumerate(news_list))).T
-folder_path = os.getcwd()
-file_name = 'data/news/'+keyword+'.csv'
-news_df.to_csv(file_name)
-print('Saved at {}/{}'.format(folder_path,file_name))
+	# Save
+	news_df = DataFrame(dict(enumerate(news_list))).T
+	folder_path = os.getcwd()
+	file_name = 'data/news/'+keyword+'.csv'
+	news_df.to_csv(file_name)
+	print('Saved at {}/{}'.format(folder_path,file_name))
 # %%
