@@ -3,18 +3,30 @@ import os
 import pandas as pd
 import dateutil.parser
 
+kospi=pd.read_csv('data/stock/kospi.csv')
+kospi=pd.DataFrame(kospi[['Date','Close']])
+kospi=kospi.rename(columns={'Close':'CloseK'})
+kospi=kospi.set_index('Date')
+
 for keyword in os.listdir('data/news'):
 	keyword=keyword.split('.')[0]
 
 	stock=pd.read_csv('data/stock/{}.csv'.format(keyword))
+
+	#TODO: Merge stock and kospi by date
+
 	stock=stock.set_index('Date')
+	stock=stock.join(kospi)
+
 	stock.index=pd.to_datetime(stock.index.map(dateutil.parser.parse)+pd.DateOffset(hours=15,minutes=30))
 
 	#결측값 제거
 	stock = stock.dropna(how='any',axis=0)
+	
 	stock['Change'] = stock['Close'].astype('float').pct_change()
+	stock['ChangeK'] = stock['CloseK'].astype('float').pct_change()
 
-	stock=stock[['Change']]
+	stock=stock[['Change','ChangeK']]
 	stock=stock.sort_values('Date')
 
 	news=pd.read_csv('data/news/{}.csv'.format(keyword))
