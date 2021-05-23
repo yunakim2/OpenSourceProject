@@ -3,7 +3,7 @@ import numpy as np
 import re
 
 if __name__ == '__main__':
-    news = pd.read_csv('data/labeled/samsung_2010_2021.csv')
+    news = pd.read_csv('data/labeled/all.csv')
     news.drop(['Unnamed: 0'], axis=1, inplace=True)
 
     idx = 0
@@ -18,7 +18,7 @@ if __name__ == '__main__':
     newss['label'].astype(int)
     newss['label'] = newss['label'].apply(lambda x: 1 if x >= 0 else 0)
 
-    newss.to_csv('data/labeled/samsung_2010_2021_01.csv')
+    newss.to_csv('data/labeled/all_processing.csv')
 
 
 
