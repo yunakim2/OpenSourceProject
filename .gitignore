@@ -130,7 +130,7 @@ dmypy.json
 
 .DS_Store
 
-data/.DS_Store
+*.DS_Store
 
 # VS Code
 .vscode/
