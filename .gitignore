@@ -134,4 +134,4 @@ dmypy.json
 
 # VS Code
 .vscode/
-tmp/
+tmp/.DS_Store
