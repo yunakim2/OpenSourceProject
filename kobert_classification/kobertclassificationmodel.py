@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[2]:
+# In[ ]:
 
 
 get_ipython().system('pip install transformers')
@@ -14,10 +14,10 @@ get_ipython().system('pip install sentencepiece')
 get_ipython().system('pip install git+https://git@github.com/SKTBrain/KoBERT.git@master')
 
 
-# In[3]:
+# In[ ]:
 
 
-get_ipython().system('wget https://raw.githubusercontent.com/yunakim2/OpenSourceProject/develop/data/labeled/samsung_2010_2021_01.csv')
+get_ipython().system('wget https://raw.githubusercontent.com/yunakim2/OpenSourceProject/feat/bertModel/data/test_data/all_processing_01.csv')
 
 import gc
 import torch
@@ -43,7 +43,7 @@ import torch.nn as nn
 import torchvision.datasets as dsets
 
 
-# In[15]:
+# In[ ]:
 
 
 USE_CUDA = True
@@ -81,10 +81,10 @@ bertmodel, vocab = get_pytorch_kobert_model()
 #%%
 
 
-# In[16]:
+# In[ ]:
 
 
-data = pd.read_csv('samsung_2010_2021_01.csv',encoding = 'utf-8')
+data = pd.read_csv('all_processing_01.csv',encoding = 'utf-8')
 test_cnt = int(data.shape[0] * 0.25)
 
 test = data[:test_cnt]
@@ -125,7 +125,7 @@ validation_sampler = SequentialSampler(validation_data)
 validation_dataloader = DataLoader(validation_data, sampler=validation_sampler, batch_size=BATCH_SIZE)
 
 
-# In[17]:
+# In[ ]:
 
 
 print('test data processing')
@@ -147,7 +147,7 @@ test_sampler = RandomSampler(test_data)
 test_dataloader = DataLoader(test_data, sampler=test_sampler, batch_size=BATCH_SIZE)
 
 
-# In[18]:
+# In[ ]:
 
 
 """분류를 위한 BERT 모델 생성"""
@@ -298,7 +298,7 @@ print("")
 print("Training complete!")
 
 
-# In[13]:
+# In[ ]:
 
 
 # 시작 시간 설정
@@ -311,6 +311,9 @@ model.eval()
 eval_loss, eval_accuracy = 0, 0
 nb_eval_steps, nb_eval_examples = 0, 0
 
+
+print('===== model accuracy evaluation =====')
+
 # 데이터로더에서 배치만큼 반복하여 가져옴
 for step, batch in enumerate(test_dataloader):
     # 경과 정보 표시
@@ -320,7 +323,6 @@ for step, batch in enumerate(test_dataloader):
 
     # 배치를 GPU에 넣음
     batch = tuple(t.to(device) for t in batch)
-    print(batch)
     # 배치에서 데이터 추출
     b_input_ids, b_input_mask, b_labels = batch
 
