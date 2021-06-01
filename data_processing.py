@@ -34,6 +34,7 @@ for keyword in os.listdir('data/news'):
 	news=news.sort_values('time')
 
 	news['text']=news['text'].str.replace(keyword,'종목명')
+	news['title']=news['title'].str.replace(keyword,'종목명')
 
 	labeled_data = pd.merge_asof(news,stock,left_on='time',right_on='Date',direction='forward')
 
